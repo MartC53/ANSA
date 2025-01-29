@@ -171,4 +171,4 @@ cython_debug/
 .pypirc
 
 #Torch models
-.pth
+*.pth
