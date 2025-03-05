@@ -109,3 +109,75 @@ plt.vlines(New, ymin=0, ymax=data['Average Intensity'].max(), color='m', linesty
 plt.legend()
 plt.xlabel('Frame (Time)')
 plt.ylabel('Intensity Average over All Images')
+
+import os
+import torch
+import torch.nn.functional as F
+
+def process_and_save(root_dir, save_dir, target_size=(500, 500)):
+    """
+    Extracts the first 20 frames' average and 6 selected frames, resizes, and saves to new .pt files.
+    """
+    classes = ['undetectable', 'low', 'medium', 'high']
+    selected_frame_indices = [69, 89, 109, 129, 149, 179]
+
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    
+    for label in classes:
+        class_path = os.path.join(root_dir, label)
+        save_class_path = os.path.join(save_dir, label)
+        
+        if not os.path.exists(class_path):
+            continue  # Skip if folder doesn't exist
+        
+        if not os.path.exists(save_class_path):
+            os.makedirs(save_class_path)
+        
+        for file in os.listdir(class_path):
+            if file.endswith('.pt'):
+                file_path = os.path.join(class_path, file)
+                save_file_path = os.path.join(save_class_path, file)
+                
+                # Load tensor
+                tensor_data = torch.load(file_path, map_location='cpu')  # [C, T, H, W]
+                max_frames = tensor_data.shape[1]
+                
+                # Ensure enough frames
+                valid_frames = [i for i in selected_frame_indices if i < max_frames]
+                if len(valid_frames) < 6:
+                    print(f"Skipping {file_path}: Not enough frames ({max_frames} available, required 180)")
+                    continue
+                
+                # Compute average of the first 20 frames
+                avg_first_20 = torch.mean(tensor_data[:, :20, :, :], dim=1, keepdim=True)  # [C, 1, H, W]
+                selected_frames = tensor_data[:, valid_frames, :, :]  # [C, 6, H, W]
+                
+                # Concatenate to form a 7-frame tensor
+                final_tensor = torch.cat((avg_first_20, selected_frames), dim=1)  # [C, 7, H, W]
+                final_tensor = final_tensor.squeeze(0) if final_tensor.shape[0] == 1 else final_tensor
+                
+                # Resize
+                if final_tensor.dim() == 3:
+                    final_tensor = final_tensor.unsqueeze(0)  # -> [1, 7, H, W]
+                
+                resized_tensor = F.interpolate(
+                    final_tensor, size=target_size, mode='bilinear', align_corners=False
+                )
+                
+                # Save reduced file
+                torch.save(resized_tensor, save_file_path)
+                print(f"Saved: {save_file_path}")
+
+# Example usage
+train_dataset_path = 'H:/Datasets/int_split/Training/'
+val_dataset_path = 'H:/Datasets/int_split/Validation/'
+test_dataset_path = 'H:/Datasets/int_split/Testing/'
+
+train_save_path = 'H:/Datasets/reduced/Training/'
+val_save_path = 'H:/Datasets/reduced/Validation/'
+test_save_path = 'H:/Datasets/reduced/Testing/'
+
+process_and_save(train_dataset_path, train_save_path)
+process_and_save(val_dataset_path, val_save_path)
+process_and_save(test_dataset_path, test_save_path)
