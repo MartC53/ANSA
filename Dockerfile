@@ -1,20 +1,24 @@
-# Use the base PyTorch Jupyter image
 FROM quay.io/jupyter/pytorch-notebook:cuda12-ubuntu-24.04
 
-# Install Python packages
-RUN pip install --no-cache-dir optuna==4.2.0
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONPATH=/home/jovyan/work/src:${PYTHONPATH}
 
-# Set working directory inside the container
 WORKDIR /home/jovyan/work
 
-# Copy notebooks into the container
-COPY ./*.ipynb /home/jovyan/work/
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Make directory for mounting datasets
-RUN mkdir -p /home/jovyan/work/datasets
+COPY notebooks/ /home/jovyan/work/notebooks/
+COPY src/ /home/jovyan/work/src/
+COPY scripts/ /home/jovyan/work/scripts/
+COPY README.md /home/jovyan/work/README.md
 
-# Expose Jupyter Notebook's default port
+RUN mkdir -p /home/jovyan/work/datasets \
+    /home/jovyan/work/models \
+    /home/jovyan/work/results
+
 EXPOSE 8888
 
-# Run Jupyter Notebook on container startup
 CMD ["start-notebook.sh", "--NotebookApp.token=''"]
