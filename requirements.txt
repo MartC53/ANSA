@@ -5,26 +5,24 @@
 # It replaces the previous Windows-specific conda explicit export.
 
 # Core scientific stack
-numpy==1.26.4
-pandas==2.2.3
-scipy==1.13.1
+numpy
+pandas
+scipy
 
 # Image processing
-scikit-image==0.24.0
-tifffile==2023.4.12
-imageio==2.37.0
-Pillow==11.1.0
-opencv-python-headless==4.10.0.84
+scikit-image
+tifffile
+imageio
+Pillow
+opencv-python-headless
 
 # Machine learning / deep learning
-torch==2.7.1
-torchvision==0.22.1
-scikit-learn==1.6.1
-optuna==4.2.0
+scikit-learn
+optuna
 
 # Plotting / notebook figures
-matplotlib==3.9.2
-seaborn==0.13.2
+matplotlib
+seaborn
 
 # Notebook support
-ipykernel==6.29.5
+ipykernel
