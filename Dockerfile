@@ -15,7 +15,7 @@ COPY src/ /home/jovyan/work/src/
 COPY scripts/ /home/jovyan/work/scripts/
 COPY README.md /home/jovyan/work/README.md
 
-RUN mkdir -p /home/jovyan/work/datasets \
+RUN mkdir -p /home/jovyan/work/data \
     /home/jovyan/work/models \
     /home/jovyan/work/results
 
