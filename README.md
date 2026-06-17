@@ -26,16 +26,21 @@ ANSA/
 │   └── Optuna_logarithmic_model.ipynb
 ├── scripts/
 │   └── rebuild_data_from_manifest.py
-├── src/
-│   └── ansa/
-│       ├── data_utils.py
-│       └── visualization.py
-├── data/              # created locally; not tracked by git
-├── models/            # created locally; not tracked by git
-└── results/           # created locally; not tracked by git
+└── src/
+    └── ansa/
+        ├── data_utils.py
+        └── visualization.py
 ```
 
-The `data/`, `models/`, and `results/` directories are intentionally kept out of version control. The processed tensor data should be downloaded separately from OSF.
+The dataset is intentionally kept out of version control. The processed tensor data should be downloaded separately from OSF and mounted into the Docker container at runtime. Local `models/` and `results/` folders can be created wherever you want to save outputs.
+
+Optional local output folders, not tracked by git:
+
+```text
+ANSA/
+├── models/
+└── results/
+```
 
 ## Data availability
 
@@ -56,10 +61,10 @@ ANSA_OSF_data/
 
 The `.pt` tensor files are stored in one unordered folder. The manifest files define how the same tensor files should be assigned to the clinical and logarithmic datasets.
 
-After rebuilding, the local data folder should look like this:
+After rebuilding, the mounted OSF data folder should look like this. The folder may be named `data/`, `ANSA_OSF_data/`, or any other local path on your computer, as long as it is mounted to `/home/jovyan/work/data` inside Docker.
 
 ```text
-data/
+ANSA_OSF_data/
 ├── Metadata/
 ├── processed_reduced_tensors/
 ├── reduced/
@@ -74,8 +79,8 @@ data/
 
 where:
 
-- `data/reduced/` is used by the clinical model.
-- `data/reduced_log/` is used by the logarithmic model.
+- `<mounted OSF folder>/reduced/` is used by the clinical model.
+- `<mounted OSF folder>/reduced_log/` is used by the logarithmic model.
 
 ## Option 1: Run with Docker
 
@@ -89,57 +94,61 @@ From the repository root:
 docker build -t ansa-ml .
 ```
 
-### Step 2. Prepare local folders
+### Step 2. Download the OSF data
 
-Create local folders for mounted data, trained models, and output figures. These folders are not tracked by git.
+Download and extract the OSF dataset to any convenient location on your computer. The OSF data folder does **not** need to be inside the GitHub repository.
+
+For example, the local OSF folder could be one of the following:
 
 Ubuntu/Linux:
 
-```bash
-mkdir -p data models results
+```text
+/home/username/ANSA_OSF_data
 ```
 
 Windows PowerShell:
 
+```text
+C:\Users\username\Downloads\ANSA_OSF_data
+```
+
+After extraction, the OSF folder should contain:
+
+```text
+ANSA_OSF_data/
+├── Metadata/
+│   ├── clinical_split_manifest.csv
+│   ├── logarithmic_split_manifest.csv
+│   └── sample_manifest.csv
+└── processed_reduced_tensors/
+    ├── *.pt
+    └── ...
+```
+
+### Step 3. Choose local output folders
+
+Create local folders for trained models and generated results. These can be inside the repository or somewhere else on your computer.
+
+Ubuntu/Linux, from the repository root:
+
+```bash
+mkdir -p models results
+```
+
+Windows PowerShell, from the repository root:
+
 ```powershell
-mkdir data
 mkdir models
 mkdir results
 ```
 
-### Step 3. Download and place the OSF data
-
-Download the OSF dataset separately and place the extracted contents inside the local `data/` folder. Before starting Docker, the repository should look like this:
-
-```text
-ANSA/
-├── Dockerfile
-├── notebooks/
-├── scripts/
-├── src/
-├── data/
-│   ├── Metadata/
-│   │   ├── clinical_split_manifest.csv
-│   │   ├── logarithmic_split_manifest.csv
-│   │   └── sample_manifest.csv
-│   └── processed_reduced_tensors/
-│       ├── *.pt
-│       └── ...
-├── models/
-└── results/
-```
-
-The Docker run commands below mount the local `data/`, `models/`, and `results/` folders into the container. The most important mount is:
-
-```text
-local data folder -> /home/jovyan/work/data inside Docker
-```
-
-The notebooks and rebuild script assume that the OSF data are available inside the container at:
+You may also create a local `data/` folder in the repository and place the OSF contents there, but this is optional. The important point is that the OSF data folder you choose must be mounted to this path inside Docker:
 
 ```text
 /home/jovyan/work/data
 ```
+
+The Docker run commands below use placeholders for the local OSF folder. Replace them with the actual path on your computer.
 
 ### Step 4A. Start Docker without a GPU
 
@@ -149,7 +158,17 @@ Ubuntu/Linux:
 
 ```bash
 docker run -p 8888:8888 \
-  -v "$(pwd)/data:/home/jovyan/work/data" \
+  -v /path/to/ANSA_OSF_data:/home/jovyan/work/data \
+  -v "$(pwd)/models:/home/jovyan/work/models" \
+  -v "$(pwd)/results:/home/jovyan/work/results" \
+  ansa-ml
+```
+
+Example:
+
+```bash
+docker run -p 8888:8888 \
+  -v /home/username/ANSA_OSF_data:/home/jovyan/work/data \
   -v "$(pwd)/models:/home/jovyan/work/models" \
   -v "$(pwd)/results:/home/jovyan/work/results" \
   ansa-ml
@@ -159,7 +178,17 @@ Windows PowerShell:
 
 ```powershell
 docker run -p 8888:8888 `
-  -v "${PWD}\data:/home/jovyan/work/data" `
+  -v "C:\path\to\ANSA_OSF_data:/home/jovyan/work/data" `
+  -v "${PWD}\models:/home/jovyan/work/models" `
+  -v "${PWD}\results:/home/jovyan/work/results" `
+  ansa-ml
+```
+
+Example:
+
+```powershell
+docker run -p 8888:8888 `
+  -v "C:\Users\username\Downloads\ANSA_OSF_data:/home/jovyan/work/data" `
   -v "${PWD}\models:/home/jovyan/work/models" `
   -v "${PWD}\results:/home/jovyan/work/results" `
   ansa-ml
@@ -173,7 +202,7 @@ Ubuntu/Linux:
 
 ```bash
 docker run --gpus all -p 8888:8888 \
-  -v "$(pwd)/data:/home/jovyan/work/data" \
+  -v /path/to/ANSA_OSF_data:/home/jovyan/work/data \
   -v "$(pwd)/models:/home/jovyan/work/models" \
   -v "$(pwd)/results:/home/jovyan/work/results" \
   ansa-ml
@@ -183,7 +212,7 @@ Windows PowerShell:
 
 ```powershell
 docker run --gpus all -p 8888:8888 `
-  -v "${PWD}\data:/home/jovyan/work/data" `
+  -v "C:\path\to\ANSA_OSF_data:/home/jovyan/work/data" `
   -v "${PWD}\models:/home/jovyan/work/models" `
   -v "${PWD}\results:/home/jovyan/work/results" `
   ansa-ml
@@ -234,7 +263,7 @@ Expected outputs:
 /home/jovyan/work/data/reduced_log/
 ```
 
-Because `/home/jovyan/work/data` is mounted from your computer, the rebuilt folders will also appear in your local `data/` directory.
+Because `/home/jovyan/work/data` is mounted from your computer, the rebuilt folders will also appear in whatever local OSF folder you mounted, such as `ANSA_OSF_data/`.
 
 ## Notebook paths
 
@@ -275,14 +304,15 @@ Create and activate an environment, then install dependencies:
 pip install -r requirements.txt
 ```
 
-If running locally, update notebook paths to point to your local `data/`, `models/`, and `results/` folders, for example:
+If running locally without Docker, update notebook paths to point to your local OSF data folder, model folder, and results folder. For example, if the OSF folder is located at `PROJECT_ROOT / "ANSA_OSF_data"`:
 
 ```python
 from pathlib import Path
 
 PROJECT_ROOT = Path.cwd()
-CLINICAL_DATA_ROOT = PROJECT_ROOT / "data" / "reduced"
-LOGARITHMIC_DATA_ROOT = PROJECT_ROOT / "data" / "reduced_log"
+OSF_DATA_ROOT = PROJECT_ROOT / "ANSA_OSF_data"
+CLINICAL_DATA_ROOT = OSF_DATA_ROOT / "reduced"
+LOGARITHMIC_DATA_ROOT = OSF_DATA_ROOT / "reduced_log"
 MODEL_ROOT = PROJECT_ROOT / "models"
 RESULTS_ROOT = PROJECT_ROOT / "results"
 ```
@@ -290,24 +320,24 @@ RESULTS_ROOT = PROJECT_ROOT / "results"
 Then rebuild the OSF data locally:
 
 ```bash
-METADATA_DIR=data/Metadata \
-CLINICAL_MANIFEST=data/Metadata/clinical_split_manifest.csv \
-LOGARITHMIC_MANIFEST=data/Metadata/logarithmic_split_manifest.csv \
-TENSOR_SOURCE_ROOT=data/processed_reduced_tensors \
-CLINICAL_OUTPUT_ROOT=data/reduced \
-LOGARITHMIC_OUTPUT_ROOT=data/reduced_log \
+METADATA_DIR=/path/to/ANSA_OSF_data/Metadata \
+CLINICAL_MANIFEST=/path/to/ANSA_OSF_data/Metadata/clinical_split_manifest.csv \
+LOGARITHMIC_MANIFEST=/path/to/ANSA_OSF_data/Metadata/logarithmic_split_manifest.csv \
+TENSOR_SOURCE_ROOT=/path/to/ANSA_OSF_data/processed_reduced_tensors \
+CLINICAL_OUTPUT_ROOT=/path/to/ANSA_OSF_data/reduced \
+LOGARITHMIC_OUTPUT_ROOT=/path/to/ANSA_OSF_data/reduced_log \
 python scripts/rebuild_data_from_manifest.py
 ```
 
 On Windows PowerShell:
 
 ```powershell
-$env:METADATA_DIR="data/Metadata"
-$env:CLINICAL_MANIFEST="data/Metadata/clinical_split_manifest.csv"
-$env:LOGARITHMIC_MANIFEST="data/Metadata/logarithmic_split_manifest.csv"
-$env:TENSOR_SOURCE_ROOT="data/processed_reduced_tensors"
-$env:CLINICAL_OUTPUT_ROOT="data/reduced"
-$env:LOGARITHMIC_OUTPUT_ROOT="data/reduced_log"
+$env:METADATA_DIR="C:\path\to\ANSA_OSF_data\Metadata"
+$env:CLINICAL_MANIFEST="C:\path\to\ANSA_OSF_data\Metadata\clinical_split_manifest.csv"
+$env:LOGARITHMIC_MANIFEST="C:\path\to\ANSA_OSF_data\Metadata\logarithmic_split_manifest.csv"
+$env:TENSOR_SOURCE_ROOT="C:\path\to\ANSA_OSF_data\processed_reduced_tensors"
+$env:CLINICAL_OUTPUT_ROOT="C:\path\to\ANSA_OSF_data\reduced"
+$env:LOGARITHMIC_OUTPUT_ROOT="C:\path\to\ANSA_OSF_data\reduced_log"
 python scripts/rebuild_data_from_manifest.py
 ```
 
@@ -326,7 +356,7 @@ Typical outputs include:
 ## Notes for reproducibility
 
 - The Docker image does not contain the OSF dataset.
-- Always mount the OSF data folder to `/home/jovyan/work/data` when running Docker.
+- Always mount the local OSF data folder, wherever it lives on your computer, to `/home/jovyan/work/data` when running Docker.
 - Rebuilding from manifests is deterministic with respect to the manifest files and tensor filenames.
 - The script optionally verifies SHA256 checksums when the manifest contains a `sha256` column.
 - GPU acceleration is recommended for model training and Optuna optimization, but the container can start and notebooks can run on CPU.
