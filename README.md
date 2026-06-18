@@ -2,7 +2,6 @@
 
 <img width="2053" height="2071" alt="overview" src="https://github.com/user-attachments/assets/672b6489-4bde-4bdd-8d83-b0fd93867aca" />
 
-
 This repository contains code and notebooks for semi-quantitative classification of HIV-1 nucleic acid amplification reactions using time-resolved fluorescence images from Amplification Nucleation Site Analysis (ANSA). ANSA produces spatially localized fluorescent amplification sites during isothermal amplification reactions in a microfluidic chip. At high target concentrations, these sites can overlap, making direct site counting unreliable. This project uses modified ResNet models to learn spatiotemporal fluorescence patterns from multi-frame image tensors and classify reactions into clinically relevant or logarithmically spaced DNA concentration ranges.
 
 The analysis supports two classification tasks:
@@ -86,12 +85,45 @@ where:
 
 Docker is the recommended way to reproduce the analysis environment. The Docker image contains the software environment, notebooks, source code, and rebuild script. The image does **not** contain the ANSA dataset. Download the dataset separately from OSF and mount it into the container at runtime.
 
-### Step 1. Build the image locally
+There are two Docker options:
+
+- **Option 1A: Pull the prebuilt image** from GitHub Container Registry. This is the easiest option for users who want to run the analysis without building the image themselves.
+- **Option 1B: Build the image locally** from the Dockerfile. This is useful for development or if you want to modify the environment.
+
+### Step 1A. Pull the prebuilt Docker image
+
+A prebuilt Docker image is available from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/martc53/ansa-ml:latest
+```
+
+Use this image name in the Docker run commands below:
+
+```text
+ghcr.io/martc53/ansa-ml:latest
+```
+
+If the package is private, users must first authenticate with GitHub Container Registry using a GitHub account that has access to the package:
+
+```bash
+docker login ghcr.io
+```
+
+For public release, set the GitHub package visibility to public so users can pull the image without authentication.
+
+### Step 1B. Or build the image locally
 
 From the repository root:
 
 ```bash
 docker build -t ansa-ml .
+```
+
+If you build locally, use this image name in the Docker run commands below:
+
+```text
+ansa-ml
 ```
 
 ### Step 2. Download the OSF data
@@ -148,7 +180,13 @@ You may also create a local `data/` folder in the repository and place the OSF c
 /home/jovyan/work/data
 ```
 
-The Docker run commands below use placeholders for the local OSF folder. Replace them with the actual path on your computer.
+The Docker run commands below use placeholders for the local OSF folder. Replace them with the actual path on your computer. The commands use the prebuilt image by default:
+
+```text
+ghcr.io/martc53/ansa-ml:latest
+```
+
+If you built the image locally instead, replace `ghcr.io/martc53/ansa-ml:latest` with `ansa-ml`.
 
 ### Step 4A. Start Docker without a GPU
 
@@ -161,7 +199,7 @@ docker run -p 8888:8888 \
   -v /path/to/ANSA_OSF_data:/home/jovyan/work/data \
   -v "$(pwd)/models:/home/jovyan/work/models" \
   -v "$(pwd)/results:/home/jovyan/work/results" \
-  ansa-ml
+  ghcr.io/martc53/ansa-ml:latest
 ```
 
 Example:
@@ -171,7 +209,7 @@ docker run -p 8888:8888 \
   -v /home/username/ANSA_OSF_data:/home/jovyan/work/data \
   -v "$(pwd)/models:/home/jovyan/work/models" \
   -v "$(pwd)/results:/home/jovyan/work/results" \
-  ansa-ml
+  ghcr.io/martc53/ansa-ml:latest
 ```
 
 Windows PowerShell:
@@ -181,7 +219,7 @@ docker run -p 8888:8888 `
   -v "C:\path\to\ANSA_OSF_data:/home/jovyan/work/data" `
   -v "${PWD}\models:/home/jovyan/work/models" `
   -v "${PWD}\results:/home/jovyan/work/results" `
-  ansa-ml
+  ghcr.io/martc53/ansa-ml:latest
 ```
 
 Example:
@@ -191,7 +229,7 @@ docker run -p 8888:8888 `
   -v "C:\Users\username\Downloads\ANSA_OSF_data:/home/jovyan/work/data" `
   -v "${PWD}\models:/home/jovyan/work/models" `
   -v "${PWD}\results:/home/jovyan/work/results" `
-  ansa-ml
+  ghcr.io/martc53/ansa-ml:latest
 ```
 
 ### Step 4B. Start Docker with a GPU
@@ -205,7 +243,7 @@ docker run --gpus all -p 8888:8888 \
   -v /path/to/ANSA_OSF_data:/home/jovyan/work/data \
   -v "$(pwd)/models:/home/jovyan/work/models" \
   -v "$(pwd)/results:/home/jovyan/work/results" \
-  ansa-ml
+  ghcr.io/martc53/ansa-ml:latest
 ```
 
 Windows PowerShell:
@@ -215,7 +253,7 @@ docker run --gpus all -p 8888:8888 `
   -v "C:\path\to\ANSA_OSF_data:/home/jovyan/work/data" `
   -v "${PWD}\models:/home/jovyan/work/models" `
   -v "${PWD}\results:/home/jovyan/work/results" `
-  ansa-ml
+  ghcr.io/martc53/ansa-ml:latest
 ```
 
 If GPU startup fails with an NVIDIA, WSL, or adapter error, rerun the CPU command above without `--gpus all`.
