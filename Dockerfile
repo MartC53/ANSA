@@ -10,9 +10,9 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r /tmp/requirements.txt
 
-COPY notebooks/ /home/jovyan/work/notebooks/
+COPY Notebooks/ /home/jovyan/work/Notebooks/
 COPY src/ /home/jovyan/work/src/
-COPY scripts/ /home/jovyan/work/scripts/
+COPY Scripts/ /home/jovyan/work/Scripts/
 COPY README.md /home/jovyan/work/README.md
 
 RUN mkdir -p /home/jovyan/work/data \
