@@ -401,7 +401,7 @@ Typical outputs include:
 
 ## Citation
 
-A manuscript describing this workflow is in preparation for PLOS Computational Biology. Citation details will be added after publication.
+A manuscript describing this workflow is in preparation for PLOS Computational Biology. A pre-print is available on [bioRxiv](https://www.biorxiv.org/content/10.64898/2026.06.24.734232)
 
 ```text
 Martin CD, Benson NC, Gummalla NS, Shimazu KN, Bender AT, Beck DAC, Posner JD.
